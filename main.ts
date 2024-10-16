@@ -1,134 +1,116 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, MarkdownPostProcessorContext } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
-
-interface MyPluginSettings {
-	mySetting: string;
+interface CountdownSettings {
+    projectName: string;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: CountdownSettings = {
+    projectName: 'My Project'
+};
+
+export default class CountdownPlugin extends Plugin {
+    settings: CountdownSettings;
+
+    async onload() {
+        await this.loadSettings();
+
+        this.addSettingTab(new CountdownSettingTab(this.app, this));
+
+        this.registerMarkdownCodeBlockProcessor('countdown', (source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+            const countdownEl = el.createDiv({ cls: 'countdown-widget' });
+            const headerEl = countdownEl.createDiv({ cls: 'countdown-header' });
+            const projectNameEl = headerEl.createEl('h3', { cls: 'countdown-project-name' });
+            const stagesEl = countdownEl.createDiv({ cls: 'countdown-stages' });
+
+            const updateCountdown = () => {
+                const lines = source.split('\n').map(line => line.trim()).filter(line => line !== '');
+                const projectName = lines[0] || this.settings.projectName;
+                const stages = lines.slice(1).map(line => {
+                    const [stageName, stageDate] = line.split('|').map(part => part.trim());
+                    return { name: stageName, date: stageDate };
+                });
+
+                projectNameEl.textContent = projectName;
+
+                // Clear existing stages
+                stagesEl.empty();
+
+                stages.forEach(stage => {
+                    const stageEl = stagesEl.createDiv({ cls: 'countdown-stage' });
+                    const stageInfoEl = stageEl.createDiv({ cls: 'countdown-stage-info' });
+
+                    const stageNameEl = stageInfoEl.createDiv({ cls: 'countdown-stage-name', text: stage.name });
+                    const stageDueEl = stageInfoEl.createDiv({ cls: 'countdown-stage-due', text: `Due: ${new Date(stage.date).toLocaleString()}` });
+
+                    const countdownTimeEl = stageEl.createDiv({ cls: 'countdown-time' });
+
+                    const updateStageCountdown = () => {
+                        const now = new Date();
+                        const deadline = new Date(stage.date);
+
+                        const distance = deadline.getTime() - now.getTime();
+
+                        if (distance < 0) {
+                            countdownTimeEl.textContent = 'Completed';
+                            countdownTimeEl.addClass('completed');
+                        } else {
+                            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                            countdownTimeEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                            countdownTimeEl.removeClass('completed');
+                        }
+                    };
+
+                    // Initial update
+                    updateStageCountdown();
+                    // Update every second
+                    this.registerInterval(window.setInterval(updateStageCountdown, 1000));
+                });
+            };
+
+            updateCountdown();
+        });
+    }
+
+    onunload() {
+        // Any necessary cleanup can be done here
+    }
+
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
+    }
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+class CountdownSettingTab extends PluginSettingTab {
+    plugin: CountdownPlugin;
 
-	async onload() {
-		await this.loadSettings();
+    constructor(app: App, plugin: CountdownPlugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+    display(): void {
+        const { containerEl } = this;
+        containerEl.empty();
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+        containerEl.createEl('h2', { text: 'Countdown Settings' });
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-	}
-
-	onunload() {
-
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
+        new Setting(containerEl)
+            .setName('Default Project Name')
+            .setDesc('Enter the default name of the project')
+            .addText(text => text
+                .setPlaceholder('Enter project name')
+                .setValue(this.plugin.settings.projectName)
+                .onChange(async (value: string) => {
+                    this.plugin.settings.projectName = value;
+                    await this.plugin.saveSettings();
+                }));
+    }
 }

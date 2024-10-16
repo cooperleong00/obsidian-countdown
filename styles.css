@@ -1,8 +1,151 @@
-/*
+/* Countdown Widget Container */
+.countdown-widget {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin: 20px 0;
+    font-family: 'Roboto', sans-serif;
+    color: #202124;
+    transition: background-color 0.3s, color 0.3s;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Header Section */
+.countdown-header {
+    margin-bottom: 20px;
+}
 
-If your plugin does not need CSS, delete this file.
+.countdown-project-name {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: #1a73e8;
+}
 
-*/
+/* Stages Container */
+.countdown-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Individual Stage */
+.countdown-stage {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f1f3f4;
+    border-radius: 8px;
+    padding: 12px 16px;
+    transition: background-color 0.3s;
+}
+
+.theme-dark .countdown-stage {
+    background-color: #303134;
+}
+
+/* Stage Info */
+.countdown-stage-info {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Stage Name */
+.countdown-stage-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+}
+
+.theme-dark .countdown-stage-name {
+    color: #e8eaed;
+}
+
+/* Stage Deadline */
+.countdown-stage-deadline {
+    font-size: 12px;
+    color: #5f6368;
+    margin-top: 4px;
+}
+
+.theme-dark .countdown-stage-deadline {
+    color: #9aa0a6;
+}
+
+/* Countdown Time */
+.countdown-time {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a73e8;
+    min-width: 150px;
+    text-align: right;
+    transition: color 0.3s;
+}
+
+.countdown-time.completed {
+    color: #34a853;
+}
+
+.theme-dark .countdown-time {
+    color: #8ab4f8;
+}
+
+.theme-dark .countdown-time.completed {
+    color: #81c995;
+}
+
+/* Hover Effects */
+.countdown-stage:hover {
+    background-color: #e8eaed;
+}
+
+.theme-dark .countdown-stage:hover {
+    background-color: #3c4043;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .countdown-widget {
+        padding: 16px;
+    }
+
+    .countdown-project-name {
+        font-size: 20px;
+    }
+
+    .countdown-stage {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .countdown-time {
+        text-align: left;
+        margin-top: 8px;
+    }
+}
+
+/* Dark Mode Styles */
+.theme-dark .countdown-widget {
+    background-color: #202124;
+    color: #e8eaed;
+}
+
+.theme-dark .countdown-project-name {
+    color: #8ab4f8;
+}
+
+.theme-dark .countdown-stage {
+    background-color: #303134;
+}
+
+.theme-dark .countdown-stage-name {
+    color: #e8eaed;
+}
+
+.theme-dark .countdown-time {
+    color: #8ab4f8;
+}
+
+.theme-dark .countdown-time.completed {
+    color: #81c995;
+}
